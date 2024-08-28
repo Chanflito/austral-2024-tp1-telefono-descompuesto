@@ -12,7 +12,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
+import org.springframework.util.LinkedMultiValueMap
+import org.springframework.util.MultiValueMap
+import org.springframework.web.client.RestTemplate
+import org.springframework.web.client.postForEntity
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import java.security.MessageDigest
@@ -61,6 +68,7 @@ class ApiServicesImpl: RegisterNodeApiService, RelayApiService, PlayApiService {
         if (nextNode != null) {
             // Soy un relé. busco el siguiente y lo mando
             // @ToDo do some work here
+            sendRelayMessage(message, receivedContentType, nextNode!!, signatures)
         } else {
             // me llego algo, no lo tengo que pasar
             if (currentMessageWaiting.value == null) throw BadRequestException("no waiting message")
@@ -94,18 +102,48 @@ class ApiServicesImpl: RegisterNodeApiService, RelayApiService, PlayApiService {
         sendRelayMessage(body, contentType, nodes.last(), Signatures(listOf()))
         resultReady.await()
         resultReady = CountDownLatch(1)
+        println("game finished")
         return currentMessageResponse.value!!
     }
 
     internal fun registerToServer(registerHost: String, registerPort: Int) {
         // @ToDo acá tienen que trabajar ustedes
-        val registerNodeResponse: RegisterResponse = RegisterResponse("", -1, "", "")
-        println("nextNode = ${registerNodeResponse}")
+        val restTemplate= RestTemplate()
+        val url = "http://${registerHost}:${registerPort}/register-node?host=localhost&port=${myServerPort}&name=${myServerName}"
+
+        val httpHeaders = HttpHeaders().apply {
+            contentType = MediaType.APPLICATION_JSON
+        }
+        val response= restTemplate.postForEntity<RegisterResponse>(url, httpHeaders)
+        val registerNodeResponse = response.body!!
+
         nextNode = with(registerNodeResponse) { RegisterResponse(nextHost, nextPort, uuid, hash) }
     }
 
     private fun sendRelayMessage(body: String, contentType: String, relayNode: RegisterResponse, signatures: Signatures) {
-        // @ToDo acá tienen que trabajar ustedes
+        val restTemplate = RestTemplate()
+        val url = "http://${relayNode.nextHost}:${relayNode.nextPort}/relay"
+
+        val clientSignature = clientSign(body, contentType)
+        val updatedSignatures = signatures.items + clientSignature
+
+        val newSignatures = Signatures(updatedSignatures)
+
+        //Create a multipart body
+        val multiPartBody: MultiValueMap<String, Any> = LinkedMultiValueMap()
+        multiPartBody.add("message", body)
+        multiPartBody.add("signatures", newSignatures)
+
+        // Create the headers
+        val httpHeaders = HttpHeaders()
+        httpHeaders.contentType = MediaType.MULTIPART_FORM_DATA
+
+        // Create the request entity
+        val requestEntity = HttpEntity(multiPartBody, httpHeaders)
+
+        // Send the request
+        restTemplate.postForEntity(url, requestEntity, Signature::class.java)
+
     }
 
     private fun clientSign(message: String, contentType: String): Signature {
