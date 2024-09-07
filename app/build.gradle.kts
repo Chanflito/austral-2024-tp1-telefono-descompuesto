@@ -110,3 +110,30 @@ tasks.create("openApiGenerateClient", org.openapitools.generator.gradle.plugin.t
 
     // additionalProperties.put()
 }
+
+tasks.create<JavaExec>("runApp1") {
+    group = "application"
+    description = "Run the application with application-test1.properties"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ar.edu.austral.inf.sd.ApplicationKt")
+    args = listOf()
+    systemProperty("spring.config.location", "$projectDir/src/main/resources/application-test1.properties")
+}
+
+tasks.create<JavaExec>("runApp2") {
+    group = "application"
+    description = "Run the application with application-test2.properties"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ar.edu.austral.inf.sd.ApplicationKt")
+    args = listOf()
+    systemProperty("spring.config.location", "$projectDir/src/main/resources/application-test2.properties")
+}
+
+tasks.create<JavaExec>("runApp3") {
+    group = "application"
+    description = "Run the application with application-test3.properties"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ar.edu.austral.inf.sd.ApplicationKt")
+    args = listOf()
+    systemProperty("spring.config.location", "$projectDir/src/main/resources/application-test3.properties")
+}

@@ -124,30 +124,41 @@ class ApiServicesImpl: RegisterNodeApiService, RelayApiService, PlayApiService {
         val restTemplate = RestTemplate()
         val url = "http://${relayNode.nextHost}:${relayNode.nextPort}/relay"
 
+        // Create a new client signature
         val clientSignature = clientSign(body, contentType)
         val updatedSignatures = signatures.items + clientSignature
-
         val newSignatures = Signatures(updatedSignatures)
 
-        //Create a multipart body
+
+        // Create the headers for the message part
+        val messageHeaders = HttpHeaders()
+        messageHeaders.contentType = MediaType.APPLICATION_JSON
+
+        // Create the HttpEntity for the message part
+        val messageEntity = HttpEntity(body, messageHeaders)
+
+        // Add the message part as json
         val multiPartBody: MultiValueMap<String, Any> = LinkedMultiValueMap()
-        multiPartBody.add("message", body)
+        multiPartBody.add("message", messageEntity)
+
+        // Add the signatures part
         multiPartBody.add("signatures", newSignatures)
 
-        // Create the headers
+        // Create the headers for the entire request (set as multipart)
         val httpHeaders = HttpHeaders()
         httpHeaders.contentType = MediaType.MULTIPART_FORM_DATA
 
-        // Create the request entity
+        // Create the request entity with the multipart body and headers
         val requestEntity = HttpEntity(multiPartBody, httpHeaders)
 
         // Send the request
         restTemplate.postForEntity(url, requestEntity, Signature::class.java)
-
     }
 
     private fun clientSign(message: String, contentType: String): Signature {
-        val receivedHash = doHash(message.encodeToByteArray(), salt)
+        //Use the next node hash if available, otherwise use the salt
+        val nodeHash = nextNode?.hash ?: salt
+        val receivedHash = doHash(message.encodeToByteArray(), nodeHash)
         return Signature(myServerName, receivedHash, contentType, message.length)
     }
 
