@@ -12,6 +12,13 @@ sealed class ApiException(msg: String, val code: Int) : Exception(msg)
 class NotFoundException(msg: String, code: Int = HttpStatus.NOT_FOUND.value()) : ApiException(msg, code)
 class BadRequestException(msg: String) : ApiException(msg, HttpStatus.BAD_REQUEST.value())
 
+class UnauthorizedException(msg: String) : ApiException(msg, HttpStatus.UNAUTHORIZED.value())
+
+class ServiceUnavailableException(msg: String) : ApiException(msg, HttpStatus.SERVICE_UNAVAILABLE.value())
+
+class InternalServerErrorException(msg: String) : ApiException(msg, HttpStatus.INTERNAL_SERVER_ERROR.value())
+
+class GatewayTimeoutException(msg: String) : ApiException(msg, HttpStatus.GATEWAY_TIMEOUT.value())
 
 @ControllerAdvice
 class DefaultExceptionHandler {
