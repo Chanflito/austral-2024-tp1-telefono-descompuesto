@@ -130,7 +130,7 @@ class ApiServicesImpl : RegisterNodeApiService, RelayApiService, PlayApiService,
 
     override fun sendMessage(body: String): PlayResponse {
         if (currentTimeout > timeOut) {
-            throw GatewayTimeoutException("Timeout reached, game is closed")
+            throw BadRequestException("Timeout reached, game is closed")
         }
         if (nodes.isEmpty()) {
             // inicializamos el primer nodo como yo mismo
