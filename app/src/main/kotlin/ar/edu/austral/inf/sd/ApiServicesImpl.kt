@@ -339,7 +339,7 @@ class ApiServicesImpl : RegisterNodeApiService, RelayApiService, PlayApiService,
     private fun isValidData(uuid: UUID?, salt: String?) = uuid == nodeUUID && salt == this.nodeSalt
 
     private fun doHash(body: ByteArray, salt: String): String {
-        val saltBytes = Base64.getDecoder().decode(salt)
+        val saltBytes = Base64.getUrlDecoder().decode(salt)
         messageDigest.update(saltBytes)
         val digest = messageDigest.digest(body)
         return Base64.getEncoder().encodeToString(digest)
@@ -348,6 +348,6 @@ class ApiServicesImpl : RegisterNodeApiService, RelayApiService, PlayApiService,
     private fun isLastNode(nodeIndex: Int) = nodeIndex == nodes.size - 1
 
     companion object {
-        fun newSalt(): String = Base64.getEncoder().encodeToString(Random.nextBytes(9))
+        fun newSalt(): String = Base64.getUrlEncoder().encodeToString(Random.nextBytes(9))
     }
 }
